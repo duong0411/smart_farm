@@ -7,7 +7,7 @@ plugins {
 android {
     namespace = "vn.smartfarm.smart_farm_app"
     compileSdk = flutter.compileSdkVersion
-    // Không pin NDK — tránh fail CI khi runner thiếu đúng bản flutter.ndkVersion
+    ndkVersion = "28.2.13676358"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
