@@ -71,11 +71,12 @@ class MqttService extends ChangeNotifier {
     _error = null;
     notifyListeners();
 
+    // Broker reject ID dài (MQTT 3.1 max 23). Giữ ≤22 ký tự alphanumeric.
     final clientId =
-        'SF-App-${DateTime.now().millisecondsSinceEpoch}-${Random().nextInt(9999)}';
+        'sf${DateTime.now().millisecondsSinceEpoch % 100000000}'
+        '${Random().nextInt(900) + 100}'; // e.g. sf123456789012 (~14 chars)
 
-    // wss URL đầy đủ + secure=false (TLS nằm trong WSS). secure=true sẽ
-    // DNS-lookup cả chuỗi "wss://..." → errno 8 trên iOS/Android.
+    // wss URL + secure=false (TLS trong WSS). secure=true → DNS lỗi cả chuỗi URL.
     final client = MqttServerClient.withPort(
       MqttConfig.wssUrl,
       clientId,
@@ -84,9 +85,10 @@ class MqttService extends ChangeNotifier {
     client.useWebSocket = true;
     client.secure = false;
     client.websocketProtocols = MqttClientConstants.protocolsSingleDefault;
+    client.setProtocolV311();
     client.logging(on: kDebugMode);
     client.keepAlivePeriod = 60;
-    client.connectTimeoutPeriod = 15000;
+    client.connectTimeoutPeriod = 20000;
     client.autoReconnect = true;
     client.resubscribeOnAutoReconnect = true;
     client.onConnected = _onConnected;
@@ -103,9 +105,9 @@ class MqttService extends ChangeNotifier {
     final connMsg = MqttConnectMessage()
         .withClientIdentifier(clientId)
         .startClean()
-        .withWillTopic('tele/SF-App/status')
+        .withWillTopic('tele/sfapp/status')
         .withWillMessage('offline')
-        .withWillQos(MqttQos.atLeastOnce);
+        .withWillQos(MqttQos.atMostOnce);
     client.connectionMessage = connMsg;
 
     _client = client;
