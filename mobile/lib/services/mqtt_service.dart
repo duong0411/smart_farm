@@ -74,14 +74,15 @@ class MqttService extends ChangeNotifier {
     final clientId =
         'SF-App-${DateTime.now().millisecondsSinceEpoch}-${Random().nextInt(9999)}';
 
-    // QUAN TRỌNG: truyền wss://host/mqtt — không chỉ hostname
+    // wss URL đầy đủ + secure=false (TLS nằm trong WSS). secure=true sẽ
+    // DNS-lookup cả chuỗi "wss://..." → errno 8 trên iOS/Android.
     final client = MqttServerClient.withPort(
       MqttConfig.wssUrl,
       clientId,
       MqttConfig.port,
     );
     client.useWebSocket = true;
-    client.secure = true;
+    client.secure = false;
     client.websocketProtocols = MqttClientConstants.protocolsSingleDefault;
     client.logging(on: kDebugMode);
     client.keepAlivePeriod = 60;
