@@ -1,13 +1,14 @@
 # Smart Farm
 
-Firmware ESP32 + app Flutter cho nhà kính thông minh: cảm biến, bơm / đèn / quạt qua MQTT.
+Firmware ESP32 + app Flutter cho nhà kính thông minh: cảm biến, bơm / đèn / quạt qua MQTT, **phát hiện sâu bệnh lá** (ESP32-CAM → AI server).
 
 ## Cấu trúc
 
 | Thư mục | Mô tả |
 |---------|--------|
-| `SmartFarm_ESP32.ino` | Firmware ESP32 (AUTO/MANUAL, MQTT WSS) |
+| `SmartFarm_ESP32.ino` | Firmware ESP32 nhà kính (AUTO/MANUAL, MQTT WSS) |
 | `mobile/` | App Flutter (Android + iOS) |
+| `leaf_ai/` | Server AI sâu bệnh + firmware ESP32-CAM Capture |
 | `.github/workflows/release.yml` | Build APK + IPA và tạo GitHub Release |
 
 ## MQTT (khớp firmware)
@@ -18,14 +19,48 @@ Firmware ESP32 + app Flutter cho nhà kính thông minh: cảm biến, bơm / đ
 - Điều khiển: `cmnd/{chipId}_pump/POWER` → `ON` \| `OFF` (chỉ khi **MANUAL**)
 - Mode: `cmnd/{chipId}_mode/POWER` → `AUTO` \| `MANUAL`
 
+## Phát hiện sâu bệnh (Leaf AI)
+
+```
+ESP32-CAM  →  POST /api/leaf/predict  →  https://api.duynguyen.io.vn
+                                              ↓
+                                    Docker leaf-ai :3090
+                                    (MobileNetV2 ~91% acc)
+```
+
+### Chạy server AI (Docker)
+
+```bash
+cd leaf_ai
+docker compose up -d --build
+```
+
+- Local: `http://127.0.0.1:3090/health`
+- Public: `https://api.duynguyen.io.vn` (Cloudflare Tunnel → `:3090`)
+- Ngưỡng cảnh báo: `GET/POST /api/leaf/settings` (`alert_threshold`)
+- Lịch sử + ảnh viz: `GET /api/leaf/detections`, `/api/leaf/alerts`
+
+### App mobile
+
+Tab **Sâu bệnh**:
+
+- Cảnh báo khi phát hiện bệnh ≥ ngưỡng
+- Ảnh visualize (banner + khung đỏ nếu alert)
+- Lịch sử detection
+- Set ngưỡng cảnh báo (icon tune)
+
+### Firmware camera
+
+Sketch: `leaf_ai/firmware/ESP32_CAM_Capture` — SoftAP `ESP32-CAM`, URL mặc định `https://api.duynguyen.io.vn`
+
 ## App Flutter
 
 ### Tính năng
 
-- Đăng ký / đăng nhập / quên mật khẩu (lưu local trên thiết bị)
-- Nhập **Chip ID** → kết nối MQTT
-- Hiển thị: nhiệt độ, độ ẩm, đất, mực nước, CO₂, ánh sáng
-- Điều khiển: bơm, đèn, quạt, chuyển AUTO/MANUAL, calibrate CO₂
+- Đăng ký / đăng nhập / quên mật khẩu (lưu local)
+- Nhập **Chip ID** → MQTT
+- Cảm biến + điều khiển bơm / đèn / quạt / AUTO·MANUAL
+- **Sâu bệnh**: cảnh báo, ảnh, ngưỡng
 
 ### Chạy local
 
@@ -35,35 +70,6 @@ flutter pub get
 flutter run
 ```
 
-Đăng ký tài khoản mới → nhập Chip ID (ví dụ `123`) → xem dashboard.
-
 ## GitHub Actions — APK & IPA Release
 
-Workflow: **Build & Release**
-
-**Cách 1 — tag version**
-
-```bash
-git tag v1.0.0
-git push origin v1.0.0
-```
-
-**Cách 2 — chạy tay**
-
-GitHub → Actions → *Build & Release* → *Run workflow*
-
-Artifacts trên Release:
-
-- `SmartFarm-arm64-v8a.apk` / `armeabi-v7a` / `x86_64`
-- `SmartFarm.aab`
-- `SmartFarm-unsigned.ipa` (chưa codesign — sideload / cần thêm cert Apple để ký App Store)
-
-### Ký IPA (tùy chọn)
-
-Thêm secrets repo (`BUILD_CERTIFICATE_BASE64`, `P12_PASSWORD`, `BUILD_PROVISION_PROFILE_BASE64`, …) rồi sửa job `build-ios` bỏ `--no-codesign` và import cert trước khi `flutter build ipa`.
-
-## Firmware nhanh
-
-1. Sửa `CHIP_ID` trong `SmartFarm_ESP32.ino` nếu cần
-2. Nạp ESP32, cấu hình WiFi (giữ BOOT 5s → portal `SmartFarm`)
-3. App nhập đúng Chip ID → nhận `tele/...` và gửi `cmnd/...`
+Tag `v1.0.0` hoặc Actions → *Build & Release* → *Run workflow*.

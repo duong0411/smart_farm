@@ -30,3 +30,10 @@ mobile/android/key.properties
 *.keystore
 .env
 .env.*
+
+# Leaf AI runtime
+leaf_ai/server/logs/
+leaf_ai/server/data/
+leaf_ai/pipeline/models/ibeans*/
+leaf_ai/pipeline/models/leaf_float.keras
+**/__pycache__/

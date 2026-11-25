@@ -3,9 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import 'screens/chip_id_screen.dart';
-import 'screens/dashboard_screen.dart';
+import 'screens/home_shell.dart';
 import 'screens/login_screen.dart';
 import 'services/auth_service.dart';
+import 'services/leaf_service.dart';
 import 'services/mqtt_service.dart';
 import 'theme/app_theme.dart';
 
@@ -20,6 +21,7 @@ Future<void> main() async {
 
   final auth = AuthService();
   final mqtt = MqttService();
+  final leaf = LeafService();
   await auth.loadSession();
   await mqtt.loadChipId();
 
@@ -28,6 +30,7 @@ Future<void> main() async {
       providers: [
         ChangeNotifierProvider.value(value: auth),
         ChangeNotifierProvider.value(value: mqtt),
+        ChangeNotifierProvider.value(value: leaf),
       ],
       child: const SmartFarmApp(),
     ),
@@ -62,8 +65,10 @@ class _RootGateState extends State<_RootGate> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final auth = context.read<AuthService>();
       final mqtt = context.read<MqttService>();
+      final leaf = context.read<LeafService>();
       if (auth.isLoggedIn && mqtt.chipId.isNotEmpty) {
         mqtt.connect();
+        leaf.load();
       }
     });
   }
@@ -75,6 +80,6 @@ class _RootGateState extends State<_RootGate> {
 
     if (!auth.isLoggedIn) return const LoginScreen();
     if (mqtt.chipId.isEmpty) return const ChipIdScreen();
-    return const DashboardScreen();
+    return const HomeShell();
   }
 }

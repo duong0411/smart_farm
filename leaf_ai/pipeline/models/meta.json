@@ -1,0 +1,15 @@
+{
+  "classes": [
+    "dom_la_goc",
+    "gi_sat_la",
+    "khoe_manh"
+  ],
+  "img": 224,
+  "test_accuracy": 0.9140625,
+  "backbone": "MobileNetV2",
+  "model_keras": "leaf_float.keras",
+  "model_tflite": "leaf_server.tflite",
+  "tflite_kb": 2651.2,
+  "dataset": "huggingface:beans",
+  "vram_note": "MobileNetV2 @224 batch=24 \u2014 OK CPU/4GB VRAM"
+}

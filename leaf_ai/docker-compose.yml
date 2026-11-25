@@ -1,0 +1,19 @@
+# Smart Farm — Leaf Disease AI (:3090)
+# Public: api.duynguyen.io.vn → localhost:3090 (Cloudflared)
+services:
+  leaf-ai:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    container_name: leaf-ai
+    ports:
+      - "3090:3090"
+    volumes:
+      - ./server/logs:/app/server/logs
+      - ./server/data:/app/server/data
+    environment:
+      LEAF_PORT: "3090"
+      LEAF_PREFER_TFLITE: "1"
+      TF_CPP_MIN_LOG_LEVEL: "2"
+      TF_ENABLE_ONEDNN_OPTS: "0"
+    restart: unless-stopped

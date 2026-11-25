@@ -9,11 +9,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/farm_state.dart';
 
-/// Khớp firmware SmartFarm_ESP32.ino (WSS MQTT)
+/// Khớp firmware SmartFarm_ESP32.ino (WSS MQTT) — CHIP_ID mặc định "123"
 class MqttConfig {
   static const host = 'mqtt.duynguyen.io.vn';
   static const port = 443;
   static const path = '/mqtt';
+  /// mqtt_client cần full WSS URL (giống AloT / face_alot)
+  static const wssUrl = 'wss://mqtt.duynguyen.io.vn/mqtt';
 }
 
 class MqttService extends ChangeNotifier {
@@ -71,16 +73,19 @@ class MqttService extends ChangeNotifier {
 
     final clientId =
         'SF-App-${DateTime.now().millisecondsSinceEpoch}-${Random().nextInt(9999)}';
+
+    // QUAN TRỌNG: truyền wss://host/mqtt — không chỉ hostname
     final client = MqttServerClient.withPort(
-      MqttConfig.host,
+      MqttConfig.wssUrl,
       clientId,
       MqttConfig.port,
     );
     client.useWebSocket = true;
     client.secure = true;
-    client.websocketProtocols = const ['mqtt'];
-    client.logging(on: false);
-    client.keepAlivePeriod = 30;
+    client.websocketProtocols = MqttClientConstants.protocolsSingleDefault;
+    client.logging(on: kDebugMode);
+    client.keepAlivePeriod = 60;
+    client.connectTimeoutPeriod = 15000;
     client.autoReconnect = true;
     client.resubscribeOnAutoReconnect = true;
     client.onConnected = _onConnected;
@@ -89,22 +94,41 @@ class MqttService extends ChangeNotifier {
       _connecting = true;
       notifyListeners();
     };
-    client.onAutoReconnected = _onConnected;
+    client.onAutoReconnected = () {
+      _onConnected();
+      _subscribeAll();
+    };
+
+    final connMsg = MqttConnectMessage()
+        .withClientIdentifier(clientId)
+        .startClean()
+        .withWillTopic('tele/SF-App/status')
+        .withWillMessage('offline')
+        .withWillQos(MqttQos.atLeastOnce);
+    client.connectionMessage = connMsg;
 
     _client = client;
 
     try {
-      await client.connect();
+      await client.connect().timeout(const Duration(seconds: 20));
       if (client.connectionStatus?.state != MqttConnectionState.connected) {
-        throw Exception(client.connectionStatus?.returnCode.toString() ?? 'fail');
+        throw Exception(
+          client.connectionStatus?.returnCode.toString() ?? 'CONNACK missing',
+        );
       }
       _subscribeAll();
       client.updates?.listen(_onMessage);
-      // Xin rules/vitals gián tiếp: thiết bị publish định kỳ; gửi GET rules
       publish('cmnd/${_chipId}_rules/GET', 'GET');
+      _error = null;
+      if (kDebugMode) {
+        debugPrint('MQTT OK → ${MqttConfig.wssUrl} chip=$_chipId');
+      }
     } catch (e) {
       _error = 'Không kết nối MQTT: $e';
-      client.disconnect();
+      if (kDebugMode) debugPrint(_error);
+      try {
+        client.disconnect();
+      } catch (_) {}
       _client = null;
       _state = _state.copyWith(mqttConnected: false);
     } finally {
@@ -115,6 +139,7 @@ class MqttService extends ChangeNotifier {
 
   Future<void> reconnect() async {
     await disconnect();
+    await Future<void>.delayed(const Duration(milliseconds: 300));
     await connect();
   }
 
@@ -214,51 +239,60 @@ class MqttService extends ChangeNotifier {
       _state = _state.copyWith(
         humi: (json['value'] as num?)?.toDouble() ?? _state.humi,
         lastUpdate: now,
+        online: true,
       );
     } else if (topic.contains('_soil_greenhouse')) {
       _state = _state.copyWith(
         soil: (json['value'] as num?)?.toInt() ?? _state.soil,
         lastUpdate: now,
+        online: true,
       );
     } else if (topic.contains('_water_tank')) {
       _state = _state.copyWith(
         water: (json['value'] as num?)?.toInt() ?? _state.water,
         waterEmpty: json['empty'] == 1 || json['empty'] == true,
         lastUpdate: now,
+        online: true,
       );
     } else if (topic.contains('_co2_greenhouse')) {
       _state = _state.copyWith(
         co2Raw: (json['raw'] as num?)?.toInt() ?? _state.co2Raw,
         co2Ppm: (json['ppm'] as num?)?.toDouble() ?? _state.co2Ppm,
         lastUpdate: now,
+        online: true,
       );
     } else if (topic.contains('_ldr_greenhouse')) {
       final v = json['value']?.toString().toUpperCase();
-      _state = _state.copyWith(dark: v == 'DARK', lastUpdate: now);
+      _state = _state.copyWith(dark: v == 'DARK', lastUpdate: now, online: true);
     } else if (topic.contains('_pump/status')) {
       _state = _state.copyWith(
         pump: json['value']?.toString().toUpperCase() == 'ON',
         lastUpdate: now,
+        online: true,
       );
     } else if (topic.contains('_light/status')) {
       _state = _state.copyWith(
         light: json['value']?.toString().toUpperCase() == 'ON',
         lastUpdate: now,
+        online: true,
       );
     } else if (topic.contains('_fan1/status')) {
       _state = _state.copyWith(
         fan1: json['value']?.toString().toUpperCase() == 'ON',
         lastUpdate: now,
+        online: true,
       );
     } else if (topic.contains('_fan2/status')) {
       _state = _state.copyWith(
         fan2: json['value']?.toString().toUpperCase() == 'ON',
         lastUpdate: now,
+        online: true,
       );
     } else if (topic.contains('_mode/status')) {
       _state = _state.copyWith(
         mode: json['value']?.toString() ?? _state.mode,
         lastUpdate: now,
+        online: true,
       );
     }
 

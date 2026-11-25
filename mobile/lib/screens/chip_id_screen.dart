@@ -77,7 +77,7 @@ class _ChipIdScreenState extends State<ChipIdScreen> {
           ),
           const SizedBox(height: 8),
           const Text(
-            'Nhập Chip ID đã cấu hình trên ESP32 (CHIP_ID trong firmware). '
+            'Nhập Chip ID đã cấu hình trên ESP32 (mặc định firmware: 123). '
             'App sẽ subscribe tele/{id}_* và điều khiển cmnd/{id}_pump/POWER.',
             style: TextStyle(color: AppColors.muted, height: 1.4),
           ),
