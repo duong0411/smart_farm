@@ -42,6 +42,8 @@ docker compose up -d --build
 
 ### App mobile
 
+Tab **Camera**: stream JPEG từ ESP32-CAM qua MQTT (AES decrypt → hiển thị).
+
 Tab **Sâu bệnh**:
 
 - Cảnh báo khi phát hiện bệnh ≥ ngưỡng
@@ -51,7 +53,10 @@ Tab **Sâu bệnh**:
 
 ### Firmware camera
 
-Sketch: `leaf_ai/firmware/ESP32_CAM_Capture` — SoftAP `ESP32-CAM`, URL mặc định `https://api.duynguyen.io.vn`
+| Sketch | Mô tả |
+|--------|--------|
+| `leaf_ai/firmware/ESP32_CAM_Capture` | SoftAP `ESP32-CAM`, POST ảnh → `https://api.duynguyen.io.vn` (Leaf AI) |
+| `leaf_ai/firmware/ESP32_CAM_MqttStream` | SoftAP `ESP32-CAM-MQTT`, AES-128 + MQTT WSS → mobile (broker Duy Nguyen) |
 
 ## App Flutter
 

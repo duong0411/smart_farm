@@ -8,6 +8,7 @@ import 'package:mqtt_client/mqtt_server_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/farm_state.dart';
+import 'cam_stream_service.dart';
 
 /// Khớp firmware SmartFarm_ESP32.ino (WSS MQTT) — CHIP_ID mặc định "123"
 class MqttConfig {
@@ -26,6 +27,12 @@ class MqttService extends ChangeNotifier {
   FarmState _state = const FarmState();
   String? _error;
   bool _connecting = false;
+  CamStreamService? _cam;
+
+  void attachCam(CamStreamService cam) {
+    _cam = cam;
+    cam.attachMqtt(this);
+  }
 
   String get chipId => _chipId;
   FarmState get state => _state;
@@ -186,6 +193,10 @@ class MqttService extends ChangeNotifier {
       'tele/${id}_fan2/status',
       'tele/${id}_mode/status',
       'tele/${id}_rules/status',
+      // ESP32-CAM MQTT stream
+      'tele/${id}_cam/status',
+      'tele/${id}_cam/meta',
+      'tele/${id}_cam/part',
     ];
     for (final t in topics) {
       c.subscribe(t, MqttQos.atMostOnce);
@@ -205,6 +216,11 @@ class MqttService extends ChangeNotifier {
   void _handle(String topic, String payload) {
     final id = _chipId;
     final now = DateTime.now();
+
+    if (topic.startsWith('tele/${id}_cam/')) {
+      _cam?.handleMqtt(topic, payload);
+      return;
+    }
 
     if (topic == 'tele/$id/status') {
       final online = payload.trim().toLowerCase() == 'online';

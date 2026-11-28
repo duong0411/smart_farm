@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../services/leaf_service.dart';
 import '../theme/app_theme.dart';
+import 'camera_stream_screen.dart';
 import 'dashboard_screen.dart';
 import 'disease_screen.dart';
 
@@ -26,6 +27,7 @@ class _HomeShellState extends State<HomeShell> {
         index: _index,
         children: const [
           DashboardScreen(),
+          CameraStreamScreen(),
           DiseaseScreen(),
         ],
       ),
@@ -39,6 +41,11 @@ class _HomeShellState extends State<HomeShell> {
             icon: Icon(Icons.agriculture_outlined),
             selectedIcon: Icon(Icons.agriculture, color: AppColors.leaf),
             label: 'Trang trại',
+          ),
+          const NavigationDestination(
+            icon: Icon(Icons.videocam_outlined),
+            selectedIcon: Icon(Icons.videocam, color: AppColors.water),
+            label: 'Camera',
           ),
           NavigationDestination(
             icon: Badge(

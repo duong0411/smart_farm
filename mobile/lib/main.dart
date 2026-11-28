@@ -6,6 +6,7 @@ import 'screens/chip_id_screen.dart';
 import 'screens/home_shell.dart';
 import 'screens/login_screen.dart';
 import 'services/auth_service.dart';
+import 'services/cam_stream_service.dart';
 import 'services/leaf_service.dart';
 import 'services/mqtt_service.dart';
 import 'theme/app_theme.dart';
@@ -22,8 +23,11 @@ Future<void> main() async {
   final auth = AuthService();
   final mqtt = MqttService();
   final leaf = LeafService();
+  final cam = CamStreamService();
   await auth.loadSession();
   await mqtt.loadChipId();
+  await cam.load();
+  mqtt.attachCam(cam);
 
   runApp(
     MultiProvider(
@@ -31,6 +35,7 @@ Future<void> main() async {
         ChangeNotifierProvider.value(value: auth),
         ChangeNotifierProvider.value(value: mqtt),
         ChangeNotifierProvider.value(value: leaf),
+        ChangeNotifierProvider.value(value: cam),
       ],
       child: const SmartFarmApp(),
     ),
