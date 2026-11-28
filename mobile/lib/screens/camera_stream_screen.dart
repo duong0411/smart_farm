@@ -50,7 +50,7 @@ class CameraStreamScreen extends StatelessWidget {
             subtitle: Text(
               mqtt.chipId.isEmpty
                   ? 'Chưa có Chip ID'
-                  : 'cmnd/${mqtt.chipId}_cam/STREAM',
+                  : 'tele/${mqtt.chipId}_cam/frame · JPEG liên tục',
               style: const TextStyle(fontSize: 12, color: AppColors.muted),
             ),
             value: cam.streamOn,
@@ -81,9 +81,7 @@ class CameraStreamScreen extends StatelessWidget {
                           padding: const EdgeInsets.all(24),
                           child: Text(
                             mqtt.isConnected
-                                ? (cam.assembling
-                                    ? 'Đang nhận frame…'
-                                    : 'Chờ ảnh từ ESP32-CAM\n(Chip ID trùng firmware)')
+                                ? 'Chờ stream từ ESP32-CAM\n(Chip ID trùng firmware)'
                                 : 'Chưa kết nối MQTT',
                             textAlign: TextAlign.center,
                             style: const TextStyle(

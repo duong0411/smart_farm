@@ -1,30 +1,38 @@
-# ESP32-CAM — MQTT JPEG stream (AES)
+# ESP32-CAM — Continuous MQTT JPEG stream
 
-SoftAP **ESP32-CAM-MQTT** → WiFi nhà → `wss://mqtt.duynguyen.io.vn/mqtt` → frame JPEG mã hóa AES-128-CBC.
+Camera **luôn bật**, nén JPEG liên tục → AES → MQTT binary. Mobile decode từng packet và hiển thị (gapless).
 
-## Cấu hình portal
+## SoftAP / Broker
 
-| Field | Mặc định | Ghi chú |
-|-------|----------|---------|
-| Chip ID | `123` | **Trùng Chip ID trên app** |
-| AES hex | `536d6172744661726d43616d4b657921` | = `SmartFarmCamKey!` |
-| Interval | `1500` ms | chu kỳ stream |
+- SoftAP: `ESP32-CAM-MQTT`
+- Broker: `wss://mqtt.duynguyen.io.vn:443/mqtt`
+- Chip mặc định: `123` (trùng app)
 
 ## Topics
 
+| Topic | Payload |
+|-------|---------|
+| `tele/{chip}_cam/status` | `online` / `offline` |
+| `tele/{chip}_cam/frame` | **binary** `SFC1` + w/h + iv + AES ciphertext |
+| `cmnd/{chip}_cam/STREAM` | `ON` / `OFF` |
+| `cmnd/{chip}_cam/SNAP` | chụp ngay 1 frame |
+
+## Packet `SFC1`
+
 ```
-tele/{chip}_cam/status   online|offline
-tele/{chip}_cam/meta     id, iv, chunks, w, h…
-tele/{chip}_cam/part     id, i, n, d (base64)
-cmnd/{chip}_cam/STREAM   ON|OFF
-cmnd/{chip}_cam/SNAP     chụp 1 frame
+magic[4] = 'S','F','C','1'
+width    u16 LE
+height   u16 LE
+iv[16]
+ciphertext  AES-128-CBC PKCS7(JPEG)
 ```
 
-## Nén ảnh
+## Nén / tốc độ
 
-- `FRAMESIZE_QQVGA` (160×120) + `jpeg_quality = 22`
-- AES + Base64 → chia chunk ~2.8 KB / MQTT message
+- QQVGA 160×120, `jpeg_quality = 28` (~1–3 KB JPEG)
+- Interval mặc định **250 ms** (~4 fps), portal chỉnh được (≥100 ms)
+- 1 MQTT message / frame (không chia chunk)
 
 ## Flash
 
-Board **AI Thinker ESP32-CAM** · libs: WiFiManager, WebSockets, MQTTPubSubClient
+Board **AI Thinker ESP32-CAM** · WiFiManager, WebSockets, MQTTPubSubClient

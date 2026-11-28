@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:mqtt_client/mqtt_client.dart';
@@ -193,10 +194,9 @@ class MqttService extends ChangeNotifier {
       'tele/${id}_fan2/status',
       'tele/${id}_mode/status',
       'tele/${id}_rules/status',
-      // ESP32-CAM MQTT stream
+      // ESP32-CAM continuous stream
       'tele/${id}_cam/status',
-      'tele/${id}_cam/meta',
-      'tele/${id}_cam/part',
+      'tele/${id}_cam/frame',
     ];
     for (final t in topics) {
       c.subscribe(t, MqttQos.atMostOnce);
@@ -207,8 +207,15 @@ class MqttService extends ChangeNotifier {
     for (final event in events) {
       final msg = event.payload as MqttPublishMessage;
       final topic = event.topic;
-      final payload =
-          MqttPublishPayload.bytesToStringAsString(msg.payload.message);
+      final raw = msg.payload.message;
+      final bytes = Uint8List.fromList(raw);
+
+      if (topic == 'tele/${_chipId}_cam/frame') {
+        _cam?.handleFrameBinary(bytes);
+        continue;
+      }
+
+      final payload = MqttPublishPayload.bytesToStringAsString(raw);
       _handle(topic, payload);
     }
   }
