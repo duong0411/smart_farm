@@ -1,7 +1,7 @@
 name: smart_farm_app
 description: Smart Farm — điều khiển nhà kính ESP32 qua MQTT
 publish_to: 'none'
-version: 1.2.1+6
+version: 1.2.2+7
 
 environment:
   sdk: ^3.13.7

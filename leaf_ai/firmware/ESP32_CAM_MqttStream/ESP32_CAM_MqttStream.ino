@@ -26,7 +26,8 @@
 #define CAMERA_MODEL_AI_THINKER
 #include "camera_pins.h"
 
-using MqttClient8k = arduino::mqtt::PubSubClient<8192>;
+// ~4 KB đủ JPEG QQVGA đã nén + header SFC1; để dành RAM cho camera DMA
+using MqttClient4k = arduino::mqtt::PubSubClient<4096>;
 
 static const char *AP_NAME = "ESP32-CAM-MQTT";
 static const char *MQTT_HOST = "mqtt.duynguyen.io.vn";
@@ -56,7 +57,7 @@ bool snapOnce = false;
 Preferences prefs;
 WiFiManager wm;
 WebSocketsClient wsClient;
-MqttClient8k mqttClient;
+MqttClient4k mqttClient;
 
 unsigned long lastFrame = 0;
 unsigned long lastMqttTry = 0;
@@ -251,7 +252,7 @@ bool publishLiveFrame(camera_fb_t *fb) {
   }
 
   size_t total = HDR_LEN + cipherLen;
-  if (total > 7800) {  // dưới buffer MQTT 8k
+  if (total > 3900) {  // dưới buffer MQTT 4k
     free(cipher);
     Serial.printf("frame too big jpg=%u\n", fb->len);
     return false;
@@ -298,6 +299,13 @@ void loadPrefs() {
   String aesHex = prefs.getString("aes", DEFAULT_AES_HEX);
   prefs.end();
   if (chipId.length() < 1) chipId = DEFAULT_CHIP;
+  // Migrate prefs cũ (chụp từng frame 1.5–15s) → stream liên tục
+  if (frameIntervalMs > 500) {
+    frameIntervalMs = FRAME_MS_DEFAULT;
+    prefs.begin("cammqtt", false);
+    prefs.putUInt("interval", frameIntervalMs);
+    prefs.end();
+  }
   if (frameIntervalMs < FRAME_MS_MIN) frameIntervalMs = FRAME_MS_MIN;
   if (frameIntervalMs > 60000) frameIntervalMs = 60000;
   if (!parseAesHex(aesHex, aesKey)) parseAesHex(DEFAULT_AES_HEX, aesKey);

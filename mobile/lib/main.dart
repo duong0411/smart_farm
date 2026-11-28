@@ -7,7 +7,6 @@ import 'screens/home_shell.dart';
 import 'screens/login_screen.dart';
 import 'services/auth_service.dart';
 import 'services/cam_stream_service.dart';
-import 'services/leaf_service.dart';
 import 'services/mqtt_service.dart';
 import 'theme/app_theme.dart';
 
@@ -22,7 +21,6 @@ Future<void> main() async {
 
   final auth = AuthService();
   final mqtt = MqttService();
-  final leaf = LeafService();
   final cam = CamStreamService();
   await auth.loadSession();
   await mqtt.loadChipId();
@@ -34,7 +32,6 @@ Future<void> main() async {
       providers: [
         ChangeNotifierProvider.value(value: auth),
         ChangeNotifierProvider.value(value: mqtt),
-        ChangeNotifierProvider.value(value: leaf),
         ChangeNotifierProvider.value(value: cam),
       ],
       child: const SmartFarmApp(),
@@ -70,10 +67,8 @@ class _RootGateState extends State<_RootGate> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final auth = context.read<AuthService>();
       final mqtt = context.read<MqttService>();
-      final leaf = context.read<LeafService>();
       if (auth.isLoggedIn && mqtt.chipId.isNotEmpty) {
         mqtt.connect();
-        leaf.load();
       }
     });
   }

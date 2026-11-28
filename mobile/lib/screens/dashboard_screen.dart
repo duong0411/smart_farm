@@ -4,7 +4,6 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../services/auth_service.dart';
-import '../services/leaf_service.dart';
 import '../services/mqtt_service.dart';
 import '../theme/app_theme.dart';
 
@@ -14,7 +13,6 @@ class DashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final mqtt = context.watch<MqttService>();
-    final leaf = context.watch<LeafService>();
     final s = mqtt.state;
     final time = s.lastUpdate == null
         ? '—'
@@ -75,30 +73,6 @@ class DashboardScreen extends StatelessWidget {
                       child: Text(
                         'Cảnh báo: bể nước hết / thấp — bơm có thể bị khóa',
                         style: TextStyle(color: AppColors.alert),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-            if (leaf.hasOpenAlert) ...[
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFF3E0),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.alert.withValues(alpha: 0.35)),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.bug_report, color: AppColors.alert),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        'Sâu bệnh: ${leaf.alerts.first.labelVi} '
-                        '(${(leaf.alerts.first.score * 100).round()}%) — xem tab Sâu bệnh',
-                        style: const TextStyle(color: AppColors.alert),
                       ),
                     ),
                   ],
